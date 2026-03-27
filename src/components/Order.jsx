@@ -1,11 +1,7 @@
+import axios from "../axios";
 import React, { useEffect, useState } from 'react';
-// ✅ IMPORT: Hamara custom axios instance
-import axios from '../axios'; 
-import { Spinner, Alert, Badge, Table, Button, Card } from 'react-bootstrap';
 
 const Order = () => {
-  // 🗑️ Removed: const baseUrl = import.meta.env.VITE_BASE_URL;
-  
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,39 +10,47 @@ const Order = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // ✅ CLEANED: Ab baseURL axios config se handle hoga
-        const response = await axios.get('/api/orders');
+        const response = await axios.get(`/api/orders`);
         setOrders(response.data);
         setLoading(false);
       } catch (error) {
-        console.error("Fetch Orders Error:", error);
-        setError("Orders load nahi ho payi. Please check if backend is live.");
+        console.log(error);
+        setError("Failed to fetch orders. Please try again later.");
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, []);
+  }, [baseUrl]);
 
   const toggleOrderDetails = (orderId) => {
-    setExpandedOrder(expandedOrder === orderId ? null : orderId);
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null);
+    } else {
+      setExpandedOrder(orderId);
+    }
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      'PLACED': { bg: 'info', text: 'Placed' },
-      'SHIPPED': { bg: 'primary', text: 'Shipped' },
-      'DELIVERED': { bg: 'success', text: 'Delivered' },
-      'CANCELLED': { bg: 'danger', text: 'Cancelled' }
-    };
-    const current = statusMap[status] || { bg: 'secondary', text: status };
-    return <Badge bg={current.bg}>{current.text}</Badge>;
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'PLACED':
+        return 'bg-info';
+      case 'SHIPPED':
+        return 'bg-primary';
+      case 'DELIVERED':
+        return 'bg-success';
+      case 'CANCELLED':
+        return 'bg-danger';
+      default:
+        return 'bg-secondary';
+    }
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'INR',
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -56,105 +60,121 @@ const Order = () => {
 
   if (loading) {
     return (
-      <div className="container mt-5 pt-5 text-center">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-2">Fetching your orders...</p>
+      <div className="container mt-5 pt-5">
+        <div className="d-flex justify-content-center align-items-center" style={{ height: "300px" }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mt-5 pt-5">
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container mt-5 pt-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">My Orders</h2>
-        <Badge pill bg="dark" className="px-3 py-2">Total Orders: {orders.length}</Badge>
-      </div>
+      <h2 className="text-center mb-4">Order Management</h2>
       
-      {error && <Alert variant="danger">{error}</Alert>}
-
-      <Card className="shadow-sm border-0">
-        <div className="table-responsive">
-          <Table hover className="mb-0 align-middle">
-            <thead className="table-light">
-              <tr>
-                <th className="ps-3">ID</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Total</th>
-                <th className="text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 ? (
+      <div className="card shadow mb-4">
+        <div className="card-header bg-primary text-white">
+          <h5 className="mb-0">Orders ({orders.length})</h5>
+        </div>
+        
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="table-light">
                 <tr>
-                  <td colSpan="6" className="text-center py-5 text-muted">
-                    Abhi tak koi order nahi mila. 🛍️
-                  </td>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                orders.map((order) => (
-                  <React.Fragment key={order.orderId}>
-                    <tr style={{ cursor: 'pointer' }} onClick={() => toggleOrderDetails(order.orderId)}>
-                      <td className="ps-3 fw-bold text-primary">#{order.orderId}</td>
-                      <td>{new Date(order.orderDate).toLocaleDateString('en-GB')}</td>
-                      <td>
-                        <div className="fw-semibold">{order.customerName}</div>
-                        <small className="text-muted">{order.email}</small>
-                      </td>
-                      <td>{getStatusBadge(order.status)}</td>
-                      <td className="fw-bold">{formatCurrency(calculateOrderTotal(order.items))}</td>
-                      <td className="text-center">
-                        <Button 
-                          variant={expandedOrder === order.orderId ? "secondary" : "outline-primary"} 
-                          size="sm"
-                        >
-                          {expandedOrder === order.orderId ? 'Hide' : 'Details'}
-                        </Button>
-                      </td>
-                    </tr>
-                    
-                    {/* Collapsible Details Row */}
-                    {expandedOrder === order.orderId && (
-                      <tr className="bg-light">
-                        <td colSpan="6" className="p-4">
-                          <div className="bg-white p-3 rounded shadow-sm border">
-                            <h6 className="fw-bold border-bottom pb-2 mb-3">Order Items</h6>
-                            <Table size="sm" borderless className="mb-0">
-                              <thead>
-                                <tr className="text-muted small">
-                                  <th>Product Name</th>
-                                  <th className="text-center">Qty</th>
-                                  <th className="text-end">Price</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {order.items.map((item, index) => (
-                                  <tr key={index}>
-                                    <td>{item.productName}</td>
-                                    <td className="text-center">x{item.quantity}</td>
-                                    <td className="text-end fw-semibold">{formatCurrency(item.totalPrice)}</td>
-                                  </tr>
-                                ))}
-                                <tr className="border-top">
-                                  <td colSpan="2" className="text-end pt-2 fw-bold">Grand Total:</td>
-                                  <td className="text-end pt-2 fw-bold text-success">
-                                    {formatCurrency(calculateOrderTotal(order.items))}
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </Table>
-                          </div>
+              </thead>
+              <tbody>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5 text-muted">No orders found</td>
+                  </tr>
+                ) : (
+                  orders.map((order) => (
+                    <React.Fragment key={order.orderId}>
+                      <tr>
+                        <td>
+                          <span className="fw-bold">{order.orderId}</span>
+                        </td>
+                        <td>
+                          <div>{order.customerName}</div>
+                          <div className="text-muted small">{order.email}</div>
+                        </td>
+                        <td>{new Date(order.orderDate).toLocaleDateString()}</td>
+                        <td>
+                          <span className={`badge ${getStatusClass(order.status)}`}>{order.status}</span>
+                        </td>
+                        <td>{order.items.length}</td>
+                        <td className="fw-bold">{formatCurrency(calculateOrderTotal(order.items))}</td>
+                        <td>
+                          <button 
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => toggleOrderDetails(order.orderId)}
+                          >
+                            {expandedOrder === order.orderId ? 'Hide Details' : 'View Details'}
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </Table>
+                      {expandedOrder === order.orderId && (
+                        <tr>
+                          <td colSpan="7" className="p-0">
+                            <div className="bg-light p-3">
+                              <h6 className="mb-3">Order Items</h6>
+                              <div className="table-responsive">
+                                <table className="table table-sm table-bordered mb-0">
+                                  <thead className="table-secondary">
+                                    <tr>
+                                      <th>Product</th>
+                                      <th>Quantity</th>
+                                      <th>Price</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {order.items.map((item, index) => (
+                                      <tr key={index}>
+                                        <td>{item.productName}</td>
+                                        <td className="text-center">{item.quantity}</td>
+                                        <td className="text-end">{formatCurrency(item.totalPrice)}</td>
+                                      </tr>
+                                    ))}
+                                    <tr className="table-info">
+                                      <td colSpan="2" className="text-end fw-bold">Total</td>
+                                      <td className="text-end fw-bold">{formatCurrency(calculateOrderTotal(order.items))}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

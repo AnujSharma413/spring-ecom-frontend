@@ -1,94 +1,55 @@
-import { useState, useEffect, createContext } from "react";
-// ✅ IMPORT: Hamara custom axios instance
-import axios from "../axios"; 
+import React, { useState } from "react";
+import Home from "./components/Home";
+import Navbar from "./components/Navbar";
+import Cart from "./components/Cart";
+import AddProduct from "./components/AddProduct";
+import Product from "./components/Product";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppProvider } from "./Context/Context";
+import UpdateProduct from "./components/UpdateProduct";
+import Order from "./components/Order";
 
-const AppContext = createContext({
-  data: [],
-  isError: "",
-  cart: [],
-  addToCart: (product) => {},
-  removeFromCart: (productId) => {},
-  refreshData: () => {},
-  clearCart: () => {},
-  updateStockQuantity: (productId, newQuantity) => {}  
-});
+import SearchResults from "./components/SearchResults";
+ 
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { ToastContainer } from "react-toastify";
 
-export const AppProvider = ({ children }) => {
-  const [data, setData] = useState([]);
-  const [isError, setIsError] = useState("");
-  
-  // Safely initialize cart from localStorage
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+function App() {
+  const [selectedCategory, setSelectedCategory] = useState("");
 
-  // 🗑️ Removed: const baseUrl = import.meta.env.VITE_BASE_URL;
-
-  const addToCart = (product) => {
-    setCart((prevCart) => {
-      const existingProductIndex = prevCart.findIndex((item) => item.id === product.id);
-      let updatedCart;
-
-      if (existingProductIndex !== -1) {
-        updatedCart = prevCart.map((item, index) =>
-          index === existingProductIndex
-            ? { ...item, quantity: (item.quantity || 1) + 1 }
-            : item
-        );
-      } else {
-        updatedCart = [...prevCart, { ...product, quantity: 1 }];
-      }
-      return updatedCart;
-    });
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    console.log("Selected category:", category);
   };
-
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-  };
-
-  const clearCart = () => {
-    setCart([]);
-    localStorage.removeItem('cart');
-  };
-
-  const refreshData = async () => {
-    try {
-      // ✅ CLEAN: Ab baseURL axios config se handle hota hai
-      const response = await axios.get("/api/products");
-      setData(response.data);
-      setIsError(""); 
-    } catch (error) {
-      console.error("Data fetch error:", error);
-      setIsError(error.message || "Failed to fetch products");
-    }
-  };
-
-  // Sync Cart with LocalStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  // Initial Data Fetch
-  useEffect(() => {
-    refreshData();
-  }, []);
 
   return (
-    <AppContext.Provider 
-      value={{ 
-        data, 
-        isError, 
-        cart, 
-        addToCart, 
-        removeFromCart, 
-        refreshData, 
-        clearCart 
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppProvider>
+      <BrowserRouter>
+        <ToastContainer autoClose={2000}
+          hideProgressBar={true} />
+        <Navbar onSelectCategory={handleCategorySelect} />
+        <div className="min-vh-100 bg-light">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home selectedCategory={selectedCategory} />
+              }
+            />
+            <Route path="/add_product" element={<AddProduct />} />
+            <Route path="/product" element={<Product />} />
+            <Route path="product/:id" element={<Product />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/product/update/:id" element={<UpdateProduct />} />
+            <Route path="/orders" element={<Order />} />
+            <Route path="/search-results" element={<SearchResults />} />
+             
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </AppProvider>
   );
-};
+}
 
-export default AppContext;
+export default App;

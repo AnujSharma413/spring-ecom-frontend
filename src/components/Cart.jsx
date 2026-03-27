@@ -1,24 +1,22 @@
 import React, { useContext, useState, useEffect } from "react";
 import AppContext from "../Context/Context";
-// ✅ IMPORT: Custom axios instance (relative path check karein)
-import axios from "../axios"; 
+import axios from "../axios";
 import CheckoutPopup from "./CheckoutPopup";
 import { Button } from 'react-bootstrap';
-import { toast } from "react-toastify";
 
 const Cart = () => {
   const { cart, removeFromCart, clearCart } = useContext(AppContext);
   const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [cartImage, setCartImage] = useState([]);
   const [showModal, setShowModal] = useState(false);
-
-  // 🗑️ Removed: const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const fetchImagesAndUpdateCart = async () => {
+      console.log("Cart", cart);
       try {
-        // ✅ CLEANED: axios instance automatically adds baseURL
-        await axios.get("/api/products"); 
+        const response = await axios.get(`/api/products`);
+        console.log("cart", cart);
         setCartItems(cart);
       } catch (error) {
         console.error("Error fetching product data:", error);
@@ -39,6 +37,11 @@ const Cart = () => {
     );
     setTotalPrice(total);
   }, [cartItems]);
+
+  const converUrlToFile = async (blobData, fileName) => {
+    const file = new File([blobData], fileName, { type: blobData.type });
+    return file;
+  };
 
   const handleIncreaseQuantity = (itemId) => {
     const newCartItems = cartItems.map((item) => {
@@ -68,45 +71,57 @@ const Cart = () => {
     const newCartItems = cartItems.filter((item) => item.id !== itemId);
     setCartItems(newCartItems);
   };
-
   const convertBase64ToDataURL = (base64String, mimeType = 'image/jpeg') => {
-    const fallbackImage = "https://via.placeholder.com/80"; 
+  // ✅ Fallback image if base64String is empty or undefined
+  const fallbackImage = "/fallback-image.jpg"; // make sure this image exists in your public folder
 
-    if (!base64String) return fallbackImage;
-    if (base64String.startsWith("data:")) return base64String;
-    if (base64String.startsWith("http")) return base64String;
+  if (!base64String) return fallbackImage;
 
-    return `data:${mimeType};base64,${base64String}`;
-  };
+  if (base64String.startsWith("data:")) {
+    return base64String;
+  }
+
+  if (base64String.startsWith("http")) {
+    return base64String;
+  }
+
+  return `data:${mimeType};base64,${base64String}`;
+};
 
   const handleCheckout = async () => {
     try {
       for (const item of cartItems) {
         const { imageUrl, imageName, imageData, imageType, quantity, ...rest } = item;
         const updatedStockQuantity = item.stockQuantity - item.quantity;
+
         const updatedProductData = { ...rest, stockQuantity: updatedStockQuantity };
+        console.log("updated product data", updatedProductData);
 
         const cartProduct = new FormData();
-        // Sending an empty blob if no new image is selected for checkout update
-        cartProduct.append("imageFile", new Blob()); 
+        cartProduct.append("imageFile", cartImage);
         cartProduct.append(
           "product",
           new Blob([JSON.stringify(updatedProductData)], { type: "application/json" })
         );
 
-        // ✅ CLEANED: Uses global axios config
-        await axios.put(`/api/product/${item.id}`, cartProduct, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await axios
+          .put(`/api/product/${item.id}`, cartProduct, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((response) => {
+            console.log("Product updated successfully:", (cartProduct));
+          })
+          .catch((error) => {
+            console.error("Error updating product:", error);
+          });
       }
-      
-      toast.success("Checkout Successful!");
       clearCart();
       setCartItems([]);
       setShowModal(false);
     } catch (error) {
-      console.error("Error during checkout:", error);
-      toast.error("Checkout failed. Check console for details.");
+      console.log("error during checkout", error);
     }
   };
 

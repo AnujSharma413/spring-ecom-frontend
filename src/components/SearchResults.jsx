@@ -1,41 +1,49 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import AppContext from "../Context/Context"; // ✅ AppContext connect kiya
-import unplugged from "../assets/unplugged.png";
 
 const SearchResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addToCart } = useContext(AppContext); // ✅ addToCart function context se liya
   const [searchData, setSearchData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if search data is available in location state
     if (location.state && location.state.searchData) {
       setSearchData(location.state.searchData);
       setLoading(false);
     } else {
-      // Agar direct access karne ki koshish kare bina data ke toh home bhej do
+      // If no search data is found, redirect to home
       navigate("/");
     }
   }, [location, navigate]);
 
-  // Image display logic
-  const convertBase64ToDataURL = (base64String, mimeType = 'image/jpeg') => {
-    if (!base64String) return unplugged;
-    if (base64String.startsWith('data:')) return base64String;
-    if (base64String.startsWith('http')) return base64String;
-    return `data:${mimeType};base64,${base64String}`;
-  };
+  // Function to convert base64 string to data URL
+    const convertBase64ToDataURL = (base64String, mimeType = 'image/jpeg') => {
+      if (!base64String) return unplugged; // Return fallback image if no data
+      
+      // If it's already a data URL, return as is
+      if (base64String.startsWith('data:')) {
+        return base64String;
+      }
+      
+      // If it's already a URL, return as is
+      if (base64String.startsWith('http')) {
+        return base64String;
+      }
+      
+      // Convert base64 string to data URL
+      return `data:${mimeType};base64,${base64String}`;
+    };
 
   const handleViewProduct = (productId) => {
     navigate(`/product/${productId}`);
   };
 
-  const handleAddToCart = (product) => {
-    addToCart(product);
-    toast.success(`${product.name} added to cart!`);
+  const handleAddToCart = (productId) => {
+    toast.success(`Product with ID ${productId} added to cart!`);
+    // Add your cart logic here
   };
 
   if (loading) {
@@ -50,73 +58,63 @@ const SearchResults = () => {
 
   return (
     <div className="container mt-5 pt-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">Search Results</h2>
-        <span className="badge bg-primary px-3 py-2">{searchData.length} Products Found</span>
-      </div>
+      <h2 className="mb-4">Search Results</h2>
       
       {searchData.length === 0 ? (
-        <div className="text-center my-5 py-5 card shadow-sm border-0">
-          <img src={unplugged} alt="No results" className="mx-auto mb-3" width="80" />
-          <h4 className="text-muted">Oops! Hume kuch nahi mila.</h4>
-          <p>Try searching for different keywords.</p>
-          <button className="btn btn-primary btn-sm mx-auto" onClick={() => navigate("/")}>Go Back Home</button>
+        <div className="alert alert-info">
+          <i className="bi bi-info-circle-fill me-2"></i>
+          No products found matching your search criteria.
         </div>
       ) : (
-        <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-          {searchData.map((product) => (
-            <div key={product.id} className="col">
-              <div className="card h-100 shadow-sm border-0">
-                <div className="position-relative">
+        <>
+          <p className="text-muted mb-4">{searchData.length} product(s) found</p>
+          
+          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {searchData.map((product) => (
+              <div key={product.id} className="col">
+                <div className="card h-100 shadow-sm">
                   <img 
-                    src={convertBase64ToDataURL(product.imageData || product.productImage)} 
+                    src={convertBase64ToDataURL(product.productImage)} 
                     className="card-img-top p-3" 
                     alt={product.name}
-                    style={{ height: "180px", objectFit: "contain", cursor: "pointer" }}
+                    style={{ height: "200px", objectFit: "contain", cursor: "pointer" }}
                     onClick={() => handleViewProduct(product.id)}
-                    onError={(e) => { e.target.src = unplugged; }}
                   />
-                  {(!product.productAvailable || product.stockQuantity <= 0) && (
-                    <span className="position-absolute top-0 start-0 m-2 badge bg-danger">Sold Out</span>
-                  )}
-                </div>
-                
-                <div className="card-body d-flex flex-column">
-                  <small className="text-muted text-uppercase fw-bold">{product.brand}</small>
-                  <h6 className="card-title text-truncate">{product.name}</h6>
-                  
-                  <div className="mb-2">
-                    <span className="badge bg-light text-dark border">{product.category}</span>
-                  </div>
-                  
-                  <p className="card-text small text-muted text-truncate mb-3" style={{ fontSize: "0.85rem" }}>
-                    {product.description}
-                  </p>
-                  
-                  <div className="mt-auto">
-                    <h5 className="text-primary fw-bold mb-3">₹{product.price.toLocaleString('en-IN')}</h5>
-                    <div className="d-flex gap-2">
+                  <div className="card-body d-flex flex-column">
+                    <h5 className="card-title">{product.name}</h5>
+                    <p className="card-text text-muted mb-1">{product.brand}</p>
+                    <div className="mb-2">
+                      <span className="badge bg-secondary">{product.category}</span>
+                    </div>
+                    <p className="card-text small">
+                      {product.description.length > 100
+                        ? product.description.substring(0, 100) + "..."
+                        : product.description}
+                    </p>
+                    <h5 className="card-text text-primary mt-auto mb-3">₹{product.price.toLocaleString('en-IN')}</h5>
+                    <div className="d-flex justify-content-between mt-auto">
                       <button 
-                        className="btn btn-outline-primary btn-sm flex-grow-1"
+                        className="btn btn-outline-primary btn-sm"
                         onClick={() => handleViewProduct(product.id)}
                       >
-                        Details
+                        View Details
                       </button>
                       <button 
-                        className="btn btn-primary btn-sm flex-grow-1"
-                        onClick={() => handleAddToCart(product)}
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleAddToCart(product.id)}
                         disabled={!product.productAvailable || product.stockQuantity <= 0}
                       >
-                        <i className="bi bi-cart-plus me-1"></i>
-                        Add
+                        {product.productAvailable && product.stockQuantity > 0
+                          ? "Add to Cart"
+                          : "Out of Stock"}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
