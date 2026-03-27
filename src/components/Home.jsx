@@ -4,6 +4,7 @@ import AppContext from "../Context/Context";
 import unplugged from "../assets/unplugged.png";
 
 const Home = ({ selectedCategory }) => {
+  // refreshData Context se aa raha hai, ensure karein Context mein axios correctly imported hai
   const { data, isError, addToCart, refreshData } = useContext(AppContext);
   const [isDataFetched, setIsDataFetched] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -17,10 +18,6 @@ const Home = ({ selectedCategory }) => {
   }, [refreshData, isDataFetched]);
 
   useEffect(() => {
-    console.log(data, 'data from home page');
-  }, [data]);
-
-  useEffect(() => {
     let toastTimer;
     if (showToast) {
       toastTimer = setTimeout(() => {
@@ -30,26 +27,18 @@ const Home = ({ selectedCategory }) => {
     return () => clearTimeout(toastTimer);
   }, [showToast]);
 
-  // Function to convert base64 string to data URL
+  // Image conversion logic with better fallbacks
   const convertBase64ToDataURL = (base64String, mimeType = 'image/jpeg') => {
-    if (!base64String) return unplugged; // Return fallback image if no data
+    if (!base64String) return unplugged; 
     
-    // If it's already a data URL, return as is
-    if (base64String.startsWith('data:')) {
-      return base64String;
-    }
+    if (base64String.startsWith('data:')) return base64String;
+    if (base64String.startsWith('http')) return base64String;
     
-    // If it's already a URL, return as is
-    if (base64String.startsWith('http')) {
-      return base64String;
-    }
-    
-    // Convert base64 string to data URL
     return `data:${mimeType};base64,${base64String}`;
   };
 
   const handleAddToCart = (e, product) => {
-    e.preventDefault();
+    e.preventDefault(); // Navigation rokne ke liye
     addToCart(product);
     setToastProduct(product);
     setShowToast(true);
@@ -61,10 +50,12 @@ const Home = ({ selectedCategory }) => {
 
   if (isError) {
     return (
-      <div className="container d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+      <div className="container d-flex justify-content-center align-items-center" style={{ height: "80vh" }}>
         <div className="text-center">
           <img src={unplugged} alt="Error" className="img-fluid" width="100" />
-          <h4 className="mt-3">Something went wrong</h4>
+          <h4 className="mt-3 text-danger">Server Connection Failed</h4>
+          <p className="text-muted">Please check if your backend is running on Render.</p>
+          <button className="btn btn-outline-primary btn-sm" onClick={() => refreshData()}>Retry</button>
         </div>
       </div>
     );
@@ -72,42 +63,14 @@ const Home = ({ selectedCategory }) => {
   
   return (
     <>
-      {/* Toast Notification */}
-      <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1050 }}>
-        <div 
-          className={`toast ${showToast ? 'show' : 'hide'}`}
-          role="alert" 
-          aria-live="assertive" 
-          aria-atomic="true"
-        >
-          <div className="toast-header bg-success text-white">
-            <strong className="me-auto">Added to Cart</strong>
-            <button 
-              type="button" 
-              className="btn-close btn-close-white" 
-              onClick={() => setShowToast(false)}
-              aria-label="Close"
-            ></button>
-          </div>
-          <div className="toast-body">
-            {toastProduct && (
-              <div className="d-flex align-items-center">
-                <img 
-                  src={convertBase64ToDataURL(toastProduct.imageData)} 
-                  alt={toastProduct.name} 
-                  className="me-2 rounded" 
-                  width="40" 
-                  height="40"
-                  onError={(e) => {
-                    e.target.src = unplugged; // Fallback image
-                  }}
-                />
-                <div>
-                  <div className="fw-bold">{toastProduct.name}</div>
-                  <small>Successfully added to your cart!</small>
-                </div>
-              </div>
-            )}
+      {/* Bootstrap Toast Notification */}
+      <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
+        <div className={`toast align-items-center text-white bg-success border-0 ${showToast ? 'show' : 'hide'}`} role="alert">
+          <div className="d-flex">
+            <div className="toast-body">
+              {toastProduct ? `✅ ${toastProduct.name} added to cart!` : 'Added to cart!'}
+            </div>
+            <button type="button" className="btn-close btn-close-white me-2 m-auto" onClick={() => setShowToast(false)}></button>
           </div>
         </div>
       </div>
@@ -116,7 +79,8 @@ const Home = ({ selectedCategory }) => {
         <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
           {!filteredProducts || filteredProducts.length === 0 ? (
             <div className="col-12 text-center my-5">
-              <h4>No Products Available</h4>
+              <div className="spinner-border text-primary" role="status"></div>
+              <h4 className="mt-3">Loading Products...</h4>
             </div>
           ) : (
             filteredProducts.map((product) => {
@@ -124,31 +88,32 @@ const Home = ({ selectedCategory }) => {
               
               return (
                 <div className="col" key={id}>
-                  <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
+                  <div className={`card h-100 shadow-sm border-0 ${(!productAvailable || stockQuantity === 0) ? 'opacity-75' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
-                      <img
-                        src={convertBase64ToDataURL(imageData)} 
-                        alt={name}
-                        className="card-img-top p-2"
-                        style={{ height: "150px", objectFit: "cover" }}
-                        onError={(e) => {
-                          e.target.src = unplugged; // Fallback image if conversion fails
-                        }}
-                      />
+                      <div className="position-relative">
+                        <img
+                          src={convertBase64ToDataURL(imageData)} 
+                          alt={name}
+                          className="card-img-top p-3"
+                          style={{ height: "200px", objectFit: "contain" }}
+                          onError={(e) => { e.target.src = unplugged; }}
+                        />
+                        {(!productAvailable || stockQuantity === 0) && (
+                          <span className="position-absolute top-0 start-0 m-2 badge bg-danger">Out of Stock</span>
+                        )}
+                      </div>
                       <div className="card-body d-flex flex-column">
-                        <h5 className="card-title">{name.toUpperCase()}</h5>
-                        <p className="card-text text-muted fst-italic">~ {brand}</p>
-                        <hr />
+                        <small className="text-uppercase text-muted fw-bold">{brand}</small>
+                        <h6 className="card-title mb-2 text-truncate">{name}</h6>
                         <div className="mt-auto">
-                          <h5 className="mb-2 fw-bold">
-                            <i className="bi bi-currency-rupee"></i>{price}
-                          </h5>
+                          <h5 className="mb-3 text-primary">₹{price.toLocaleString()}</h5>
                           <button
-                            className="btn btn-primary w-100"
+                            className={`btn ${(!productAvailable || stockQuantity === 0) ? 'btn-secondary' : 'btn-primary'} w-100`}
                             onClick={(e) => handleAddToCart(e, product)}
                             disabled={!productAvailable || stockQuantity === 0}
                           >
-                            {stockQuantity !== 0 ? "Add to Cart" : "Out of Stock"}
+                            <i className="bi bi-cart-plus me-2"></i>
+                            {stockQuantity > 0 ? "Add to Cart" : "Sold Out"}
                           </button>
                         </div>
                       </div>

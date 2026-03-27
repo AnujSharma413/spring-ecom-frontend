@@ -1,54 +1,68 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useContext, useEffect } from "react";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import AppContext from "../Context/Context";
-import axios from "../axios";
+// ✅ IMPORT: Custom axios instance
+import axios from "../axios"; 
 import { toast } from "react-toastify";
+import { Spinner, Badge, Button } from "react-bootstrap";
+import unplugged from "../assets/unplugged.png";
 
 const Product = () => {
   const { id } = useParams();
-  const { data, addToCart, removeFromCart, cart, refreshData } = useContext(AppContext);
+  const { addToCart, removeFromCart, refreshData } = useContext(AppContext);
   const [product, setProduct] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const navigate = useNavigate();
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+
+  // 🗑️ Removed: const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(
-          `${baseUrl}/api/product/${id}`
-        );
+        // ✅ CLEANED: axios instance handled baseURL
+        const response = await axios.get(`/api/product/${id}`);
         setProduct(response.data);
-        console.log(response.data);
+        
         if (response.data.imageName) {
           fetchImage();
         }
       } catch (error) {
         console.error("Error fetching product:", error);
+        toast.error("Product details load nahi ho payi.");
       }
     };
 
     const fetchImage = async () => {
-      const response = await axios.get(
-        `${baseUrl}/api/product/${id}/image`,
-        { responseType: "blob" }
-      );
-      setImageUrl(URL.createObjectURL(response.data));
+      try {
+        const response = await axios.get(`/api/product/${id}/image`, { 
+          responseType: "blob" 
+        });
+        const url = URL.createObjectURL(response.data);
+        setImageUrl(url);
+        
+        // Memory cleanup cleanup
+        return () => URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Error fetching image:", error);
+        setImageUrl(unplugged);
+      }
     };
+
     fetchProduct();
   }, [id]);
 
   const deleteProduct = async () => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+
     try {
-      await axios.delete(`${baseUrl}/api/product/${id}`);
+      await axios.delete(`/api/product/${id}`);
       removeFromCart(id);
-      console.log("Product deleted successfully");
       toast.success("Product deleted successfully");
       refreshData();
       navigate("/");
     } catch (error) {
       console.error("Error deleting product:", error);
+      toast.error("Delete karne mein error aaya.");
     }
   };
 
@@ -58,88 +72,83 @@ const Product = () => {
 
   const handlAddToCart = () => {
     addToCart(product);
-    toast.success("Product added to cart");
+    toast.success(`${product.name} added to cart!`);
   };
 
   if (!product) {
     return (
-      <div className="container mt-5 pt-5">
-        <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
+      <div className="container mt-5 pt-5 text-center">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-3">Loading product details...</p>
       </div>
     );
   }
 
   return (
     <div className="container mt-5 pt-5">
-      <div className="row">
-        {/* Product Image */}
-        <div className="col-md-6 mb-4">
-          <div className="card border-0">
+      <div className="row g-5">
+        {/* Product Image Section */}
+        <div className="col-md-6">
+          <div className="card border-0 shadow-sm p-3 bg-white rounded">
             <img
-              src={imageUrl}
+              src={imageUrl || unplugged}
               alt={product.name}
-              className="card-img-top img-fluid"
-              style={{ maxHeight: "500px", objectFit: "contain" }}
+              className="img-fluid rounded"
+              style={{ maxHeight: "450px", width: "100%", objectFit: "contain" }}
+              onError={(e) => { e.target.src = unplugged; }}
             />
           </div>
         </div>
 
-        {/* Product Details */}
+        {/* Product Info Section */}
         <div className="col-md-6">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <span className="badge bg-secondary">{product.category}</span>
+          <div className="d-flex align-items-center gap-2 mb-2">
+            <Badge bg="secondary" className="text-uppercase">{product.category}</Badge>
+            <span className="text-muted small">|</span>
             <small className="text-muted">
-              Listed: {new Date(product.releaseDate).toLocaleDateString()}
+              Released: {new Date(product.releaseDate).toLocaleDateString('en-IN')}
             </small>
           </div>
 
-          <h2 className="text-capitalize mb-1">{product.name}</h2>
-          <p className="text-muted fst-italic mb-4">~ {product.brand}</p>
+          <h1 className="display-6 fw-bold text-capitalize">{product.name}</h1>
+          <p className="lead text-muted fst-italic mb-4">by {product.brand}</p>
+
+          <div className="card bg-light border-0 p-3 mb-4">
+            <h6 className="fw-bold">Description</h6>
+            <p className="mb-0 text-secondary">{product.description}</p>
+          </div>
 
           <div className="mb-4">
-            <h5 className="mb-2">Product Description:</h5>
-            <p>{product.description}</p>
+            <h2 className="text-primary fw-bold">₹{product.price.toLocaleString('en-IN')}</h2>
+            <p className={product.stockQuantity > 0 ? "text-success mb-0" : "text-danger mb-0"}>
+              <i className={`bi bi-circle-fill me-2 small`}></i>
+              {product.stockQuantity > 0 ? `In Stock (${product.stockQuantity} units)` : "Currently Out of Stock"}
+            </p>
           </div>
 
-          <h3 className="fw-bold mb-3">₹ {product.price}</h3>
-
-          <div className="d-grid gap-2 mb-3">
-            <button
-              className="btn btn-primary btn-lg"
+          <div className="d-grid gap-3 mb-5">
+            <Button
+              variant="primary"
+              size="lg"
               onClick={handlAddToCart}
-              disabled={!product.productAvailable || product.stockQuantity == 0}
+              disabled={!product.productAvailable || product.stockQuantity <= 0}
             >
-              {product.stockQuantity !== 0 ? "Add to Cart" : "Out of Stock"}
-            </button>
+              <i className="bi bi-cart-plus me-2"></i>
+              {product.stockQuantity > 0 ? "Add to Cart" : "Out of Stock"}
+            </Button>
           </div>
 
-          <p className="mb-4">
-            <span className="me-2">Stock Available:</span>
-            <span className="fw-bold text-success">{product.stockQuantity}</span>
-          </p>
-
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-primary"
-              type="button"
-              onClick={handleEditClick}
-            >
-              <i className="bi bi-pencil me-1"></i>
-              Update
-            </button>
-
-            <button
-              className="btn btn-outline-danger"
-              type="button"
-              onClick={deleteProduct}
-            >
-              <i className="bi bi-trash me-1"></i>
-              Delete
-            </button>
+          {/* Admin Controls */}
+          <div className="border-top pt-4 mt-4">
+            <p className="small text-muted mb-2 text-uppercase fw-bold">Seller Actions</p>
+            <div className="d-flex gap-2">
+              <Button variant="outline-dark" onClick={handleEditClick}>
+                <i className="bi bi-pencil-square me-2"></i>Edit
+              </Button>
+              <Button variant="outline-danger" onClick={deleteProduct}>
+                <i className="bi bi-trash3 me-2"></i>Delete
+              </Button>
+            </div>
           </div>
         </div>
       </div>
