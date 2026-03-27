@@ -36,7 +36,7 @@ To bridge this frontend with my backend, I implemented the following:
 1.  **CORS Policy:** Updated the Spring Boot Security/Web configuration to permit cross-origin requests from the Vercel production domain.
 2.  **Base URL Mapping:** Refactored the API service layer to use a centralized environment variable for easy switching between local and live production servers.
     ```env
-    VITE_API_URL=[https://spring-boot-ecommerce-mvc.onrender.com/api](https://spring-boot-ecommerce-mvc.onrender.com/api)
+    VITE_API_URL=[https://spring-boot-ecommerce-mvc.onrender.com](https://spring-boot-ecommerce-mvc.onrender.com)
     ```
 
 ---
