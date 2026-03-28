@@ -93,14 +93,12 @@ const Home = ({ selectedCategory }) => {
             {toastProduct && (
               <div className="d-flex align-items-center">
                 <img 
-                  src={convertBase64ToDataURL(toastProduct.imageData)} 
-                  alt={toastProduct.name} 
-                  className="me-2 rounded" 
-                  width="40" 
-                  height="40"
-                  onError={(e) => {
-                    e.target.src = unplugged; // Fallback image
-                  }}
+                src={`${import.meta.env.VITE_API_URL}/api/product/${toastProduct.id}/image`} 
+                alt={toastProduct.name} 
+                className="me-2 rounded" 
+                width="40" 
+                height="40"
+                onError={(e) => { e.target.src = unplugged; }}
                 />
                 <div>
                   <div className="fw-bold">{toastProduct.name}</div>
@@ -127,13 +125,14 @@ const Home = ({ selectedCategory }) => {
                   <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
                       <img
-                        src={convertBase64ToDataURL(imageData)} 
-                        alt={name}
-                        className="card-img-top p-2"
-                        style={{ height: "150px", objectFit: "cover" }}
-                        onError={(e) => {
-                          e.target.src = unplugged; // Fallback image if conversion fails
-                        }}
+                      // Yahan hum .env se URL uthayenge aur uske aage path jodengen
+                      src={`${import.meta.env.VITE_API_URL}/api/product/${id}/image`} 
+                      alt={name}
+                      className="card-img-top p-2"
+                      style={{ height: "150px", objectFit: "cover" }}
+                      onError={(e) => {
+                        e.target.src = unplugged; // Agar image load nahi hui toh ye backup image dikhayega
+                      }}
                       />
                       <div className="card-body d-flex flex-column">
                         <h5 className="card-title">{name.toUpperCase()}</h5>
