@@ -125,14 +125,15 @@ const Home = ({ selectedCategory }) => {
                   <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
                       <img
-                      // Yahan hum .env se URL uthayenge aur uske aage path jodengen
-                      src={`${import.meta.env.VITE_API_URL}/api/product/${id}/image`} 
+                      // Fix: convertBase64ToDataURL hi use karo, ye har tarah ke image data ko handle kar lega
+                      src={convertBase64ToDataURL(product.imageData)} 
                       alt={name}
                       className="card-img-top p-2"
-                      style={{ height: "150px", objectFit: "cover" }}
+                      style={{ height: "150px", objectFit: "contain" }}
                       onError={(e) => {
-                        e.target.src = unplugged; // Agar image load nahi hui toh ye backup image dikhayega
-                      }}
+                        e.target.onerror = null; 
+                        e.target.src = unplugged; 
+                        }}
                       />
                       <div className="card-body d-flex flex-column">
                         <h5 className="card-title">{name.toUpperCase()}</h5>

@@ -83,11 +83,22 @@ const AddProduct = () => {
     }
 
     setLoading(true);
+    let formattedDate = product.releaseDate;
+    if (product.releaseDate.includes("-")) {
+        const [year, month, day] = product.releaseDate.split("-");
+        formattedDate = `${day}-${month}-${year}`;
+    }
+
+    const productData = {
+        ...product,
+        releaseDate: formattedDate
+    };
+
     const formData = new FormData();
     formData.append("imageFile", image);
     formData.append(
       "product",
-      new Blob([JSON.stringify(product)], { type: "application/json" })
+      new Blob([JSON.stringify(productData)], { type: "application/json" })
     );
 
     axios
