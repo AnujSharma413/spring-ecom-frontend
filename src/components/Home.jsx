@@ -93,7 +93,7 @@ const Home = ({ selectedCategory }) => {
             {toastProduct && (
               <div className="d-flex align-items-center">
                 <img 
-                src={`${import.meta.env.VITE_API_URL}/api/product/${toastProduct.id}/image`} 
+                src={toastProduct.imageData ? `data:image/jpeg;base64,${toastProduct.imageData}` : unplugged} 
                 alt={toastProduct.name} 
                 className="me-2 rounded" 
                 width="40" 
@@ -125,15 +125,11 @@ const Home = ({ selectedCategory }) => {
                   <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
                       <img
-                      // Fix: convertBase64ToDataURL hi use karo, ye har tarah ke image data ko handle kar lega
-                      src={convertBase64ToDataURL(product.imageData)} 
+                      src={product.imageData ? `data:image/jpeg;base64,${product.imageData}` : unplugged} 
                       alt={name}
                       className="card-img-top p-2"
                       style={{ height: "150px", objectFit: "contain" }}
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = unplugged; 
-                        }}
+                      onError={(e) => { e.target.src = unplugged; }}
                       />
                       <div className="card-body d-flex flex-column">
                         <h5 className="card-title">{name.toUpperCase()}</h5>

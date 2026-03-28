@@ -92,7 +92,7 @@ const Product = () => {
           <div className="d-flex justify-content-between align-items-center mb-2">
             <span className="badge bg-secondary">{product.category}</span>
             <small className="text-muted">
-              Listed: {new Date(product.releaseDate).toLocaleDateString()}
+              Listed: {product.releaseDate}
             </small>
           </div>
 
