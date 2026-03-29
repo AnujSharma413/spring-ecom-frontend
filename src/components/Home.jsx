@@ -125,14 +125,13 @@ const Home = ({ selectedCategory }) => {
                   <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
                       <img
-                      // Fix: Base64 check aur formatting
-                      src={product.imageData ? `data:image/jpeg;base64,${product.imageData}` : unplugged} 
+                      src={product.imageData ? `data:${product.imageType};base64,${product.imageData}` : unplugged} 
                       alt={product.name}
                       className="card-img-top p-2"
                       style={{ height: "150px", objectFit: "contain" }}
                       onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = unplugged; 
+                      e.target.onerror = null; 
+                      e.target.src = unplugged; 
                       }}
                       />
                       <div className="card-body d-flex flex-column">
