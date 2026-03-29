@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import unplugged from "../assets/unplugged.png";
 
 const SearchResults = () => {
   const location = useLocation();
@@ -74,11 +75,12 @@ const SearchResults = () => {
               <div key={product.id} className="col">
                 <div className="card h-100 shadow-sm">
                   <img 
-                    src={convertBase64ToDataURL(product.productImage)} 
-                    className="card-img-top p-3" 
-                    alt={product.name}
-                    style={{ height: "200px", objectFit: "contain", cursor: "pointer" }}
-                    onClick={() => handleViewProduct(product.id)}
+                  src={convertBase64ToDataURL(product.imageData, product.imageType)} // Backend fields use karo
+                  className="card-img-top p-3" 
+                  alt={product.name}
+                  style={{ height: "200px", objectFit: "contain", cursor: "pointer" }}
+                  onClick={() => handleViewProduct(product.id)}
+                  onError={(e) => { e.target.src = unplugged; }} // Double safety
                   />
                   <div className="card-body d-flex flex-column">
                     <h5 className="card-title">{product.name}</h5>
