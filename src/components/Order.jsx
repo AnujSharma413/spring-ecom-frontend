@@ -21,7 +21,7 @@ const Order = () => {
     };
 
     fetchOrders();
-  }, [baseUrl]);
+  }, []);
 
   const toggleOrderDetails = (orderId) => {
     if (expandedOrder === orderId) {
