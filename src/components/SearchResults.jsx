@@ -75,12 +75,12 @@ const SearchResults = () => {
               <div key={product.id} className="col">
                 <div className="card h-100 shadow-sm">
                   <img 
-                  src={convertBase64ToDataURL(product.imageData, product.imageType)} // Backend fields use karo
-                  className="card-img-top p-3" 
-                  alt={product.name}
-                  style={{ height: "200px", objectFit: "contain", cursor: "pointer" }}
-                  onClick={() => handleViewProduct(product.id)}
-                  onError={(e) => { e.target.src = unplugged; }} // Double safety
+                    src={convertBase64ToDataURL(product.imageData, product.imageType)} 
+                    className="card-img-top p-3" 
+                    alt={product.name}
+                    style={{ height: "200px", objectFit: "contain", cursor: "pointer" }}
+                    onClick={() => handleViewProduct(product.id)}
+                    onError={(e) => { e.target.src = unplugged; }}
                   />
                   <div className="card-body d-flex flex-column">
                     <h5 className="card-title">{product.name}</h5>
