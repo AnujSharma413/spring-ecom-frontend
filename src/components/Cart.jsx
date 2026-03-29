@@ -3,6 +3,8 @@ import AppContext from "../Context/Context";
 import axios from "../axios";
 import CheckoutPopup from "./CheckoutPopup";
 import { Button } from 'react-bootstrap';
+import { toast } from 'react-toastify'; // Add this
+import unplugged from "../assets/unplugged.png";
 
 const Cart = () => {
   const { cart, removeFromCart, clearCart } = useContext(AppContext);
@@ -72,21 +74,13 @@ const Cart = () => {
     setCartItems(newCartItems);
   };
   const convertBase64ToDataURL = (base64String, mimeType = 'image/jpeg') => {
-  // ✅ Fallback image if base64String is empty or undefined
-  const fallbackImage = "/fallback-image.jpg"; // make sure this image exists in your public folder
+   if (!base64String) return unplugged; 
 
-  if (!base64String) return fallbackImage;
+   if (base64String.startsWith("data:")) return base64String;
+   if (base64String.startsWith("http")) return base64String;
 
-  if (base64String.startsWith("data:")) {
-    return base64String;
-  }
-
-  if (base64String.startsWith("http")) {
-    return base64String;
-  }
-
-  return `data:${mimeType};base64,${base64String}`;
-};
+   return `data:${mimeType};base64,${base64String}`;
+  };
 
   const handleCheckout = async () => {
     try {
@@ -159,12 +153,13 @@ const Cart = () => {
                             <td>
                               <div className="d-flex align-items-center">
                                 <img
-                                  src={convertBase64ToDataURL(item.imageData)}
-                                  alt={item.name}
-                                  className="rounded me-3"
-                                  width="80"
-                                  height="80"
-                                  style={{ objectFit: "cover" }}
+                                src={convertBase64ToDataURL(item.imageData, item.imageType)}
+                                alt={item.name}
+                                className="rounded me-3"
+                                width="80"
+                                height="80"
+                                style={{ objectFit: "cover" }}
+                                onError={(e) => { e.target.src = unplugged; }}
                                 />
                                 <div>
                                   <h6 className="mb-0">{item.name}</h6>
