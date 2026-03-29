@@ -14,7 +14,7 @@ const Order = () => {
         setOrders(response.data);
         setLoading(false);
       } catch (error) {
-        console.log(error);
+        console.error("Fetch error:", error);
         setError("Failed to fetch orders. Please try again later.");
         setLoading(false);
       }
@@ -24,11 +24,7 @@ const Order = () => {
   }, []);
 
   const toggleOrderDetails = (orderId) => {
-    if (expandedOrder === orderId) {
-      setExpandedOrder(null);
-    } else {
-      setExpandedOrder(orderId);
-    }
+    setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
   const getStatusClass = (status) => {
