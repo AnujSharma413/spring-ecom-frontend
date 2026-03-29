@@ -21,6 +21,27 @@ const Home = ({ selectedCategory }) => {
   }, [data]);
 
   useEffect(() => {
+    if (data && data.length > 0) {
+      console.log("--- START ULTIMATE DIAGNOSIS ---");
+      console.log("Total products fetched:", data.length);
+      
+      // Sabse naye product ka data check karte hain
+      const lastProduct = data[data.length - 1];
+      console.log("Full JSON for Last Product:", lastProduct);
+      
+      // Specially check karte hain ki image data aa raha hai ya null
+      console.log("Image Data Check:", {
+        id: lastProduct.id,
+        name: lastProduct.name,
+        hasImageData: !!lastProduct.imageData,
+        imageDataType: typeof lastProduct.imageData,
+        imageTypeField: lastProduct.imageType
+      });
+      console.log("--- END ULTIMATE DIAGNOSIS ---");
+    }
+  }, [data]);
+
+  useEffect(() => {
     let toastTimer;
     if (showToast) {
       toastTimer = setTimeout(() => {
@@ -93,7 +114,7 @@ const Home = ({ selectedCategory }) => {
             {toastProduct && (
               <div className="d-flex align-items-center">
                 <img 
-                src={toastProduct.imageData ? `data:image/jpeg;base64,${toastProduct.imageData}` : unplugged} 
+                src={convertBase64ToDataURL(toastProduct.imageData, toastProduct.imageType)}
                 alt={toastProduct.name} 
                 className="me-2 rounded" 
                 width="40" 
@@ -125,7 +146,7 @@ const Home = ({ selectedCategory }) => {
                   <div className={`card h-100 shadow-sm ${!productAvailable ? 'bg-light' : ''}`}>
                     <Link to={`/product/${id}`} className="text-decoration-none text-dark">
                       <img
-                      src={product.imageData ? `data:${product.imageType};base64,${product.imageData}` : unplugged} 
+                      src={convertBase64ToDataURL(product.imageData, product.imageType)}
                       alt={product.name}
                       className="card-img-top p-2"
                       style={{ height: "150px", objectFit: "contain" }}
